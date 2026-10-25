@@ -155,6 +155,12 @@ window.ZP = window.ZP || {};
     window.addEventListener('keydown', unlock);
     render();
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      // when a new version of the app takes over, reload once so the whole page is up to date
+      const hadController = !!navigator.serviceWorker.controller;
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hadController && !reloaded) { reloaded = true; location.reload(); }
+      });
       navigator.serviceWorker.register('sw.js').catch(() => { /* offline mode unavailable */ });
     }
   }

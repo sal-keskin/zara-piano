@@ -1,5 +1,6 @@
-/* Offline support: cache the app shell, serve cache-first, refresh in the background. */
-const CACHE = 'little-pianist-v1';
+/* Offline support: always try the network first (so new versions show up right away),
+   and fall back to the cached copy when offline. */
+const CACHE = 'little-pianist-v2';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest', 'icons/icon.svg',
   'js/core/util.js', 'js/data/notes.js', 'js/data/songs.js', 'js/data/lessons.js', 'js/i18n.js',
@@ -19,16 +20,15 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  const cacheable = url.origin === location.origin || url.hostname.includes('fonts.g');
   e.respondWith(
-    caches.match(e.request).then(hit => {
-      const net = fetch(e.request).then(res => {
-        if (res.ok && (new URL(e.request.url).origin === location.origin || e.request.url.includes('fonts.g'))) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy));
-        }
-        return res;
-      }).catch(() => hit);
-      return hit || net;
-    })
+    fetch(e.request, { cache: 'no-cache' }).then(res => {
+      if (res.ok && cacheable) {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+      }
+      return res;
+    }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(hit => hit || (e.request.mode === 'navigate' ? caches.match('index.html') : Response.error())))
   );
 });
