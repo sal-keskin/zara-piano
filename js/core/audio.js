@@ -4,6 +4,8 @@ window.ZP = window.ZP || {};
   'use strict';
 
   let ctx = null, master = null, dry = null, wet = null, noiseBuf = null;
+  const MAX_HOLD = 12;   // seconds a held note can ring at most
+  const RELEASE = 0.22;  // fade time constant after a held key is let go
 
   const PRESETS = {
     // Toy pianos strike small metal rods: bright, bell-like, inharmonic overtones.
@@ -68,7 +70,8 @@ window.ZP = window.ZP || {};
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
 
-  /* Plays a note. opts: { when (ctx time), dur (seconds, for sustain cut), velocity, preset } */
+  /* Plays a note. opts: { when (ctx time), dur (seconds, for sustain cut), velocity, preset, dest, hold }.
+     Returns a handle whose release() ends a held note. */
   function play(id, opts) {
     opts = opts || {};
     if (!ensure()) return;
@@ -85,7 +88,10 @@ window.ZP = window.ZP || {};
     send.gain.value = p.wet;
     out.connect(send).connect(opts.dest ? opts.dest.wet : wet);
 
-    const stopAt = t + decay * 1.2 + 0.1;
+    // hold: the note keeps ringing while the key is held down, and fades out on release()
+    const hold = !!opts.hold;
+    let stopAt = hold ? t + MAX_HOLD : t + decay * 1.2 + 0.1;
+    const oscs = [];
     p.partials.forEach(([ratio, amp, dScale], i) => {
       const o = ctx.createOscillator();
       o.type = i === 0 && p.wave ? p.wave : 'sine';
@@ -94,13 +100,18 @@ window.ZP = window.ZP || {};
       const d = Math.max(0.05, decay * dScale);
       g.gain.setValueAtTime(0, t);
       g.gain.linearRampToValueAtTime(amp, t + 0.004);
-      g.gain.exponentialRampToValueAtTime(0.0008, t + d);
+      if (hold) {
+        // settle to a sustain level, then fade very slowly (like holding the sustain pedal)
+        g.gain.setTargetAtTime(amp * (i ? 0.12 : 0.45), t + 0.005, Math.max(0.03, d * 0.3));
+        g.gain.setTargetAtTime(0.0001, t + 0.7, i ? 1.2 : 3.5);
+      } else g.gain.exponentialRampToValueAtTime(0.0008, t + d);
       if (opts.dur && opts.dur < d) {
         g.gain.setTargetAtTime(0.0001, t + opts.dur, 0.06);
       }
       o.connect(g).connect(out);
       o.start(t);
       o.stop(stopAt);
+      oscs.push(o);
     });
 
     if (p.click) {
@@ -115,7 +126,23 @@ window.ZP = window.ZP || {};
       n.connect(bp).connect(g).connect(out);
       n.start(t);
     }
-    setTimeout(() => { try { out.disconnect(); send.disconnect(); } catch (e) { /* noop */ } }, (stopAt - ctx.currentTime) * 1000 + 200);
+    let cleanup = setTimeout(disconnect, (stopAt - ctx.currentTime) * 1000 + 200);
+    function disconnect() { try { out.disconnect(); send.disconnect(); } catch (e) { /* noop */ } }
+    let released = false;
+    return {
+      release() {
+        if (!hold || released) return;
+        released = true;
+        const now = Math.max(ctx.currentTime, t + 0.03);
+        out.gain.cancelScheduledValues(now);
+        out.gain.setValueAtTime(out.gain.value, now);
+        out.gain.setTargetAtTime(0, now, RELEASE);
+        stopAt = now + RELEASE * 6;
+        oscs.forEach(o => { try { o.stop(stopAt); } catch (e) { /* already stopped */ } });
+        clearTimeout(cleanup);
+        cleanup = setTimeout(disconnect, (stopAt - ctx.currentTime) * 1000 + 200);
+      }
+    };
   }
 
   // A stoppable group of sounds: everything scheduled on it can be silenced at once.

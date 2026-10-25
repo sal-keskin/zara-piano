@@ -48,8 +48,31 @@ window.ZP = window.ZP || {};
       console.error(e);
       main.appendChild(el('div.card', el('h2', '😿 ' + t('error')), el('p', String(e.message || e)), el('a.btn', { href: '#/' }, t('home'))));
     }
+    dockLayout(main);
     main.focus({ preventScroll: true });
     window.scrollTo(0, 0);
+  }
+
+  /* Pages with a piano get an app-like layout: the piano sits in its own area at the bottom
+     and everything else scrolls above it, so the piano never covers buttons or text. */
+  function dockLayout(main) {
+    const dock = main.querySelector(':scope > .piano-dock');
+    document.body.classList.toggle('dock-mode', !!dock);
+    if (!dock) return;
+    const body = el('div.view-scroll');
+    Array.from(main.childNodes).forEach(n => { if (n !== dock) body.appendChild(n); });
+    main.insertBefore(body, dock);
+    fitHeight();
+  }
+
+  function fitHeight() {
+    if (!document.body.classList.contains('dock-mode')) return;
+    const main = document.getElementById('view');
+    const tabs = document.querySelector('.tabs');
+    const top = main.getBoundingClientRect().top + window.scrollY;
+    const bottomNav = getComputedStyle(tabs).position === 'fixed' ? tabs.offsetHeight : 0;
+    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--app-h', Math.max(320, vh - top - bottomNav) + 'px');
   }
 
   function buildShell() {
@@ -123,6 +146,9 @@ window.ZP = window.ZP || {};
     buildShell();
     celebrate();
     window.addEventListener('hashchange', render);
+    window.addEventListener('resize', fitHeight);
+    window.addEventListener('orientationchange', () => setTimeout(fitHeight, 300));
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', fitHeight);
     // first interaction unlocks audio on iOS / Chrome autoplay policy
     const unlock = () => { ZP.audio.ensure(); window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock); };
     window.addEventListener('pointerdown', unlock);

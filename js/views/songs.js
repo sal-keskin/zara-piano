@@ -78,7 +78,7 @@ window.ZP = window.ZP || {};
 
     const modes = el('div.seg', { role: 'tablist' });
     [['listen', '👂'], ['learn', '🐢'], ['play', '🎮']].forEach(([m, ico]) => {
-      modes.appendChild(el('button.seg-btn' + (m === mode ? '.on' : ''), { role: 'tab', 'data-m': m, onclick: () => setMode(m) },
+      modes.appendChild(el('button.seg-btn' + (m === mode ? '.on' : ''), { role: 'tab', 'data-m': m, title: t('mode.' + m + '.desc'), onclick: () => setMode(m) },
         el('span', ico), el('span.seg-txt', t('mode.' + m))));
     });
     const tempoLabel = el('span.tempo-val');
@@ -98,8 +98,8 @@ window.ZP = window.ZP || {};
     const controls = el('div.controls');
     const piano = ZP.Piano();
     root.appendChild(desc);
+    root.appendChild(el('div.status-row', controls, status));
     root.appendChild(stage);
-    root.appendChild(el('div.status-row', status, controls));
     const dock = el('div.piano-dock', piano.el);
     root.appendChild(dock);
 
@@ -161,7 +161,8 @@ window.ZP = window.ZP || {};
       const style = ZP.store.setting('labels');
       return el('span.next-note', el('small', t('next') + ':'), ZP.dot(n.key, 'lg'),
         el('b', k.colorName[lang] + (style !== 'none' ? ' · ' + ZP.notes.label(n.key, style, lang) : '')),
-        k.black ? el('span.tag.dark', t('songs.blackKey')) : null);
+        k.black ? el('span.tag.dark', t('songs.blackKey')) : null,
+        n.dur >= 2 ? el('span.tag.hold', t('hold.tip')) : null);
     }
 
     function results(kind, stars, lines, again) {
@@ -290,7 +291,8 @@ window.ZP = window.ZP || {};
 
       const sc = ZP.util.scope();
       let playing = false, raf = 0, t0 = 0, spb = 0.6, judged = [], score = 0, combo = 0, maxCombo = 0, counts = { perfect: 0, good: 0, miss: 0 };
-      let pops = [], endAt = 0, ch = null, lanes = {};
+      let pops = [], endAt = 0, ch = null, lanes = {}, holding = {}, holds = 0;
+      const HOLD_MIN = 0.8; // seconds: notes at least this long earn a bonus when held
       const TRAVEL = 2.4; // seconds a note needs to fall
       const dpr = window.devicePixelRatio || 1;
 
@@ -314,7 +316,7 @@ window.ZP = window.ZP || {};
         const lead = (song.meter === 6 ? 3 : song.meter) * spb; // count-in
         t0 = ZP.audio.now() + Math.max(lead, TRAVEL) + 0.2;
         judged = new Array(N).fill(null);
-        score = 0; combo = 0; maxCombo = 0; counts = { perfect: 0, good: 0, miss: 0 }; pops = [];
+        score = 0; combo = 0; maxCombo = 0; counts = { perfect: 0, good: 0, miss: 0 }; pops = []; holding = {}; holds = 0;
         endAt = t0 + c.totalBeats * spb + 0.8;
         // metronome & guide melody are scheduled on the audio clock
         const beats = Math.ceil(c.totalBeats) + Math.ceil(lead / spb);
@@ -346,7 +348,7 @@ window.ZP = window.ZP || {};
           results('play', { stars, score, perfect: counts.miss === 0 && counts.good === 0 }, [
             t('res.accuracy', { n: Math.round(acc * 100) }),
             '🎯 ' + t('res.perfect') + ': ' + counts.perfect + ' · 👍 ' + t('res.goodHits') + ': ' + counts.good + ' · 💨 ' + t('res.miss') + ': ' + counts.miss,
-            '🔗 ' + t('res.combo') + ': ' + maxCombo
+            '🔗 ' + t('res.combo') + ': ' + maxCombo + (holds ? ' · ✋ ' + t('res.holds') + ': ' + holds : '')
           ], startRun);
         }
       }
@@ -383,6 +385,8 @@ window.ZP = window.ZP || {};
           const kind = bestD <= 0.11 ? 'perfect' : 'good';
           judge(best, kind, ZP.audio.now());
           piano.flash(nt.key, 'good');
+          const len = c.notes[best].dur * spb;
+          if (nt.held && len >= HOLD_MIN) holding[nt.key] = { i: best, at: ZP.audio.now(), need: len * 0.75 };
         } else {
           piano.flash(nt.key, 'bad');
           combo = 0;
@@ -390,10 +394,24 @@ window.ZP = window.ZP || {};
         }
       });
 
+      // letting go too early ends the hold without a bonus
+      sc.on('noteoff', nt => { delete holding[nt.key]; });
+
       function frame() {
         if (!playing) return;
         const now = ZP.audio.now();
         const songT = now - t0;
+        Object.keys(holding).forEach(key => {
+          const h = holding[key];
+          if (now - h.at >= h.need) {
+            delete holding[key];
+            holds++;
+            score += 50;
+            scoreEl.textContent = '⭐ ' + score;
+            pops.push({ key, kind: 'hold', at: now });
+            ZP.audio.jingle('good');
+          }
+        });
         for (let i = 0; i < N; i++) {
           if (!judged[i] && songT - c.notes[i].start * spb > 0.28) judge(i, 'miss', now);
         }
@@ -445,7 +463,8 @@ window.ZP = window.ZP || {};
           const pad = (k.black ? 0.08 : 0.14) * geo.width * W;
           const x = geo.left * W + pad, w = geo.width * W - pad * 2;
           const state = judged[i];
-          g.globalAlpha = state === 'miss' ? 0.25 : state ? 0.15 : 1;
+          const isHeld = Object.values(holding).some(h => h.i === i);
+          g.globalAlpha = state === 'miss' ? 0.25 : isHeld ? 0.7 : state ? 0.15 : 1;
           g.fillStyle = k.color;
           roundRect(g, x, yBottom - len, w, len, Math.min(w / 2, 10 * dpr));
           g.fill();
@@ -466,7 +485,7 @@ window.ZP = window.ZP || {};
           const geo = lanes[p.key];
           const a = 1 - (now - p.at) / 0.7;
           g.globalAlpha = a;
-          g.fillStyle = p.kind === 'perfect' ? '#E0A100' : p.kind === 'good' ? '#3E8E7E' : '#B05A5A';
+          g.fillStyle = p.kind === 'perfect' || p.kind === 'hold' ? '#E0A100' : p.kind === 'good' ? '#3E8E7E' : '#B05A5A';
           g.font = '700 ' + Math.round(16 * dpr) + 'px Fredoka, system-ui, sans-serif';
           g.textAlign = 'center';
           g.fillText(t('res.' + (p.kind === 'good' ? 'goodHit' : p.kind)), Math.min(Math.max((geo.left + geo.width / 2) * W, 40 * dpr), W - 40 * dpr), hitY - 30 * dpr - (1 - a) * 30 * dpr);
@@ -485,6 +504,8 @@ window.ZP = window.ZP || {};
       }
 
       draw(ZP.audio.now());
+      // measure again once the page layout has settled
+      requestAnimationFrame(() => { if (sc.alive && !playing) { size(); draw(ZP.audio.now()); } });
       return {
         stop() { if (playing) stopRun(false); sc.dispose(); },
         onMic() { if (micOn && guide) { guide = false; guideBtn.classList.remove('on'); } }

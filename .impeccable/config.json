@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "css/style.css"
+        ],
+        "createdAt": "2026-10-25T08:02:34.433Z",
+        "reason": "Claude: L138 is .bubble::before, a 45deg-rotated square whose border-left+border-bottom draw the speech-bubble tail pointing at the mascot, not a card accent border"
+      }
+    ]
+  }
+}

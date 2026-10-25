@@ -39,7 +39,9 @@ window.ZP = window.ZP || {};
       if (cells[i]) {
         cells[i].classList.add('current');
         if (scroll !== false && opts.scroller) {
-          const box = opts.scroller;
+          // scroll whichever box actually scrolls (the sheet itself, or the page area around it)
+          let box = opts.scroller;
+          if (box.scrollHeight <= box.clientHeight + 2) box = box.closest('.view-scroll') || box;
           const r = cells[i].getBoundingClientRect();
           const b = box.getBoundingClientRect();
           if (r.top < b.top + 10 || r.bottom > b.bottom - 10) {

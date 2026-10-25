@@ -88,7 +88,7 @@ const dynamic = [
   ...['listen', 'learn', 'play'].flatMap(m => ['mode.' + m, 'mode.' + m + '.desc']),
   ...['simon', 'detective', 'rush', 'highlow'].flatMap(g => ['game.' + g, 'game.' + g + '.desc']),
   ...['toy', 'musicbox', 'piano', 'xylo', 'chip'].map(p => 'sound.' + p),
-  ...['amazing', 'great', 'good', 'try', 'perfect', 'goodHit', 'miss'].map(r => 'res.' + r),
+  ...['amazing', 'great', 'good', 'try', 'perfect', 'goodHit', 'miss', 'hold'].map(r => 'res.' + r),
   ...['morning', 'afternoon', 'evening'].map(x => 'home.' + x),
   ...['learn', 'songs', 'games', 'free', 'stickers', 'chart'].map(x => 'home.tile.' + x)
 ];
