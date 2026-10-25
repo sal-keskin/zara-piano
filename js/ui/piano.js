@@ -55,33 +55,47 @@ window.ZP = window.ZP || {};
     }
     setLabels();
 
-    // ── pointer input (multi-touch + glissando) ──
-    let pressing = false;
-    function press(id) { if (opts.interactive) ZP.input.emit(id, 'screen'); }
+    // ── pointer input: multi-touch, press-and-hold, and sliding across keys ──
+    const fingers = new Map(); // pointerId -> key id
+    function down(id, pid) {
+      fingers.set(pid, id);
+      keyEls[id].classList.add('held');
+      ZP.input.noteOn(id, 'screen', pid);
+    }
+    function lift(pid) {
+      const id = fingers.get(pid);
+      if (!id) return;
+      fingers.delete(pid);
+      if (![...fingers.values()].includes(id)) keyEls[id].classList.remove('held');
+      ZP.input.release('screen', pid);
+    }
     if (opts.interactive) {
       keys.addEventListener('pointerdown', e => {
         const b = e.target.closest('.pkey');
         if (!b) return;
         e.preventDefault();
-        pressing = true;
+        // let the finger slide onto neighbouring keys (touch pointers are captured by default)
         if (b.hasPointerCapture && b.hasPointerCapture(e.pointerId)) b.releasePointerCapture(e.pointerId);
-        press(b.dataset.key);
+        down(b.dataset.key, e.pointerId);
       });
       keys.addEventListener('pointerover', e => {
         const b = e.target.closest('.pkey');
-        if (b && pressing && e.pointerType === 'mouse' && (e.buttons & 1)) press(b.dataset.key);
+        if (!b || !fingers.has(e.pointerId) || fingers.get(e.pointerId) === b.dataset.key) return;
+        lift(e.pointerId);
+        down(b.dataset.key, e.pointerId);
       });
       keys.addEventListener('keydown', e => {
         if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('pkey')) {
           e.preventDefault();
           e.stopPropagation();
-          press(e.target.dataset.key);
+          if (!e.repeat) ZP.input.emit(e.target.dataset.key, 'screen');
         }
       });
       keys.addEventListener('contextmenu', e => e.preventDefault());
     }
-    const up = () => { pressing = false; };
+    const up = e => lift(e.pointerId);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
 
     const timers = {};
     function flash(id, cls, ms) {
@@ -132,6 +146,8 @@ window.ZP = window.ZP || {};
       destroy() {
         offNote(); offSet();
         window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointercancel', up);
+        [...fingers.keys()].forEach(lift);
         Object.values(timers).forEach(clearTimeout);
         root.remove();
       }

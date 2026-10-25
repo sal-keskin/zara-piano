@@ -53,13 +53,13 @@ window.ZP = window.ZP || {};
       'mode.listen': 'Listen', 'mode.learn': 'Learn', 'mode.play': 'Rhythm',
       'mode.listen.desc': '👂 Listen to the song first. Watch the keys and dots light up.',
       'mode.learn.desc': '🐢 Play at your own speed — the app waits for the right key. Tap a dot to start from there.',
-      'mode.play.desc': '🎮 Notes fall down — play each one when it reaches the line. Lower the speed if it\'s too fast!',
+      'mode.play.desc': '🎮 Notes fall down — play each one when it reaches the line. Keep your finger on long notes for bonus points!',
       'listen.tip': 'Tip: lower the speed to listen slowly.',
       'rhythm.guide': 'Melody', 'rhythm.metro': 'Beat', 'rhythm.tip': 'Play when the note touches the line!',
 
       'res.amazing': 'AMAZING!', 'res.great': 'Great playing!', 'res.good': 'Well done!', 'res.try': 'Good try! Keep practising',
       'res.notes': '🎵 {n} notes', 'res.mistakes': '❌ {n} mistakes', 'res.partial': 'Start from the beginning to earn stars.',
-      'res.accuracy': '🎯 Accuracy: {n}%', 'res.perfect': 'Perfect', 'res.goodHits': 'Good', 'res.goodHit': 'Good', 'res.miss': 'Miss', 'res.combo': 'Best combo',
+      'res.accuracy': '🎯 Accuracy: {n}%', 'res.perfect': 'Perfect', 'res.goodHits': 'Good', 'res.goodHit': 'Good', 'res.miss': 'Miss', 'res.combo': 'Best combo', 'res.hold': 'Held! ✋', 'res.holds': 'Long notes held', 'hold.tip': '✋ hold it long',
       'print.footer': 'Find the dot colour on your piano and press that key.',
 
       'mic.realPiano': 'Real piano', 'mic.helpShort': 'Use the microphone to hear your real toy piano',
@@ -170,13 +170,13 @@ window.ZP = window.ZP || {};
       'mode.listen': 'Dinle', 'mode.learn': 'Öğren', 'mode.play': 'Ritim',
       'mode.listen.desc': '👂 Önce şarkıyı dinle. Tuşların ve noktaların yanışını izle.',
       'mode.learn.desc': '🐢 Kendi hızında çal — uygulama doğru tuşu bekler. Oradan başlamak için bir noktaya dokun.',
-      'mode.play.desc': '🎮 Notalar aşağı düşer — her biri çizgiye gelince çal. Çok hızlıysa hızı düşür!',
+      'mode.play.desc': '🎮 Notalar aşağı düşer — her biri çizgiye gelince çal. Uzun notalarda parmağını basılı tut, bonus kazan!',
       'listen.tip': 'İpucu: yavaş dinlemek için hızı düşür.',
       'rhythm.guide': 'Melodi', 'rhythm.metro': 'Tempo', 'rhythm.tip': 'Nota çizgiye değince çal!',
 
       'res.amazing': 'MUHTEŞEM!', 'res.great': 'Harika çaldın!', 'res.good': 'Aferin!', 'res.try': 'Güzel deneme! Çalışmaya devam',
       'res.notes': '🎵 {n} nota', 'res.mistakes': '❌ {n} hata', 'res.partial': 'Yıldız kazanmak için baştan başla.',
-      'res.accuracy': '🎯 Doğruluk: %{n}', 'res.perfect': 'Kusursuz', 'res.goodHits': 'İyi', 'res.goodHit': 'İyi', 'res.miss': 'Kaçtı', 'res.combo': 'En iyi seri',
+      'res.accuracy': '🎯 Doğruluk: %{n}', 'res.perfect': 'Kusursuz', 'res.goodHits': 'İyi', 'res.goodHit': 'İyi', 'res.miss': 'Kaçtı', 'res.combo': 'En iyi seri', 'res.hold': 'Tuttun! ✋', 'res.holds': 'Tutulan uzun notalar', 'hold.tip': '✋ uzun basılı tut',
       'print.footer': 'Nokta rengini piyanonda bul ve o tuşa bas.',
 
       'mic.realPiano': 'Gerçek piyano', 'mic.helpShort': 'Gerçek oyuncak piyanonu duymak için mikrofonu kullan',
