@@ -1,0 +1,16 @@
+{
+  "name": "Little Pianist Academy",
+  "short_name": "Little Pianist",
+  "description": "Learn and play the 18-key mini toy piano with colour-dot songs, lessons and games.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F7F2E6",
+  "theme_color": "#A8C9BA",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "little-pianist-academy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gamified guide to learn and play the 18-key mini toy piano",
+  "scripts": {
+    "test": "node tests/validate.mjs",
+    "start": "python3 -m http.server 8080"
+  },
+  "license": "MIT"
+}
